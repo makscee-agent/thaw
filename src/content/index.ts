@@ -166,9 +166,9 @@ export function world(): World {
     'snap*': 'snap n e s w takes a frame from your mast.',
     'view*': 'view shows the frames stored on IMG.',
     'frames/': {
-      'frame.1': ['sol 1  the lander, landing day'],
-      'frame.2': ['sol 1  the habitat, four of them waving'],
-      'frame.3': ['sol 2  K waving at you'],
+      'frame.1': { lines: ['sol 1  the lander, landing day'], frame: 'land' },
+      'frame.2': { lines: ['sol 1  the habitat, four of them waving'], frame: 'crew' },
+      'frame.3': { lines: ['sol 2  K waving at you'], frame: 'wave' },
     },
   });
 

@@ -41,7 +41,7 @@ export function defaultVerb(w: World, t: Token): string | null {
     case 'folder':
       return 'ls';
     case 'file':
-      return 'read';
+      return w.nodes[t.nodeId!]?.lines?.frame ? 'view' : 'read';
     case 'tool':
       return 'install';
     case 'device': {

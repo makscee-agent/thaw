@@ -9,6 +9,8 @@ export interface FileData {
   facts?: string[];
   /** reading this file sets the light window shown in the prompt (the almanac: 22) */
   light?: number;
+  /** a stored frame in IMG: clicking the file views it (the scene slice: 8) */
+  frame?: string;
 }
 
 export interface ToolData {
@@ -114,6 +116,8 @@ export interface State {
   path: [number, number][];
   /** which MAP layer shows */
   layer: 'forest' | 'terrain';
+  /** what FRAME shows: the last snap, or a stored frame; `things` are the ids in view, left to right */
+  frame: { place: string; heading: number; res: 32 | 96; blur?: boolean; things: string[]; still?: string } | null;
 }
 
 export interface World {
@@ -169,6 +173,7 @@ export function initialState(): State {
     trip: null,
     path: [[0, 0]],
     layer: 'forest',
+    frame: null,
   };
 }
 
