@@ -12,7 +12,8 @@ const PORT = 4179;
 const BASE = process.env.PLAY_URL ?? `http://localhost:${PORT}/`;
 const URL = `${BASE}?new&fast`;
 
-/** [kind, text, expect]: 'verb' clicks the bar, 'tok' the last token with that text, 'see' only waits */
+/** [kind, text, expect]: 'verb' clicks the bar, 'tok' the last token with that text, 'see' only waits,
+ * 'eval' runs a function in the page (text), 'click' clicks a CSS selector */
 export const STEPS = [
   ['see', null, 'shell ready'],
   ['verb', 'ls', 'readme'],
@@ -32,6 +33,26 @@ export const STEPS = [
   ['tok', 'MEM', 'map*'],
   ['tok', 'map*', 'installed'],
   ['verb', 'map', 'map open'],
+  ['verb', 'dev', 'RADIO'],
+  ['tok', 'RADIO', 'send*'],
+  ['tok', 'send*', 'installed'],
+  ['verb', 'send', 'no uplink key'],
+  // SHORTCUT until drive (#1313) and arm (#1312) land: put T at the relay with the key, the firmware
+  // and three facts, as the HAB, LDR and RLY steps will. Replace it with those steps.
+  ['eval', () => {
+    const s = window.thaw.w.state;
+    s.mounted.push('HAB', 'LDR');
+    s.installed.push('HAB/keys/uplink', 'LDR/relay.fw');
+    s.position = '@RLY';
+    s.armed.push('?mast');
+    s.facts.push('!coords', '!pods', '!kaja');
+  }, null],
+  ['verb', 'send', 'packet  0/64 bytes'],
+  ['tok', 'coords', '[x] coords'],
+  ['tok', '4 pods 3 nominal', '36/64'],
+  ['tok', 'transmit', 'rescue launched'],
+  ['see', null, 'again'],
+  ['click', '.end-again', 'shell ready'],
 ];
 
 const server = process.env.PLAY_URL ? null : spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' });
@@ -52,13 +73,15 @@ async function main() {
   let n = 0;
   for (const [kind, text, expect] of STEPS) {
     n++;
-    const where = `step ${n} ${kind} ${text ?? ''}`;
+    const where = `step ${n} ${kind} ${typeof text === 'function' ? '' : text ?? ''}`;
     try {
       await idle();
       if (kind === 'verb') await page.locator(`.bar [data-verb="${text}"]`).click({ timeout: 3000 });
       if (kind === 'tok') await page.locator(`.tok:not(.dim):not(.btn)[data-tok="${text}"]`).last().click({ timeout: 3000 });
+      if (kind === 'eval') await page.evaluate(text);
+      if (kind === 'click') await page.locator(text).click({ timeout: 3000 });
       await idle();
-      if (expect) await page.waitForFunction((t) => document.querySelector('#desk').innerText.includes(t), expect, { timeout: 3000 });
+      if (expect) await page.waitForFunction((t) => document.body.innerText.includes(t), expect, { timeout: 3000 });
       if (errors.length) throw new Error(errors.join('\n'));
     } catch (e) {
       mkdirSync('out', { recursive: true });

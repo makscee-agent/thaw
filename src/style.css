@@ -81,3 +81,26 @@ html, body {
   white-space: pre;
 }
 .forest .tree + .tree { margin-top: var(--line); }
+
+/* the end (src/end): landscape fades, then the rows, then the card */
+body[data-end] > :not(#desk):not(.end-card) { transition: opacity 3s ease-in; }
+body[data-end='scene'] > :not(#desk):not(.end-card),
+body[data-end='rows'] > :not(#desk):not(.end-card),
+body[data-end='card'] > :not(#desk):not(.end-card) { opacity: 0; }
+#desk { transition: opacity 2.5s ease-in; }
+body[data-end='rows'] #desk,
+body[data-end='card'] #desk { opacity: 0; pointer-events: none; }
+.end-card {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--line);
+}
+.end-card.fade-in { animation: fade-in 2s ease-out; }
+@keyframes fade-in { from { opacity: 0; } }
+.end-name { color: var(--head); font-size: 40px; line-height: 44px; }
+.end-again { color: var(--amber); cursor: pointer; }
+.end-again:hover { background: var(--amber); color: #000; }

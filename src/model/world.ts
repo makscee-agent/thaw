@@ -104,6 +104,10 @@ export interface State {
   more: { id: string; from: number; mode: 'read' | 'ls' } | null;
   /** set once the game ended: the ending id */
   ended: string | null;
+  /** tool node ids installed */
+  installed: string[];
+  /** the packet form: fact ids picked, null while the form is closed */
+  packet: string[] | null;
 }
 
 export interface World {
@@ -154,6 +158,8 @@ export function initialState(): State {
     lastOutput: null,
     more: null,
     ended: null,
+    installed: [],
+    packet: null,
   };
 }
 
