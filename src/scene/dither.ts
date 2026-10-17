@@ -17,15 +17,26 @@ export function dither(grey: Uint8Array, res: number, levels: 2 | 4): Uint8Array
   return out;
 }
 
-/** average a square of src*src greys down to res*res */
-export function shrink(src: Uint8Array, size: number, res: number): Uint8Array {
+/** shrink src*src greys to res*res: the average, pulled toward the darkest or brightest pixel of the
+ * square, whichever stands further out, so a thin pole or a small lit crate survives at 32 */
+export function shrink(src: Uint8Array, size: number, res: number, keep = 0.6): Uint8Array {
   const k = size / res;
   const out = new Uint8Array(res * res);
   for (let y = 0; y < res; y++)
     for (let x = 0; x < res; x++) {
       let s = 0;
-      for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) s += src[(y * k + j) * size + x * k + i];
-      out[y * res + x] = Math.round(s / (k * k));
+      let lo = 255;
+      let hi = 0;
+      for (let j = 0; j < k; j++)
+        for (let i = 0; i < k; i++) {
+          const v = src[(y * k + j) * size + x * k + i];
+          s += v;
+          if (v < lo) lo = v;
+          if (v > hi) hi = v;
+        }
+      const avg = s / (k * k);
+      const edge = hi - avg > avg - lo ? hi : lo;
+      out[y * res + x] = Math.round(avg + (edge - avg) * keep);
     }
   return out;
 }

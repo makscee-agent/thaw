@@ -37,8 +37,8 @@ const EYE = 1.95;
 const PITCH = -9;
 /** frames are rendered this many times larger, then averaged down */
 const SS = 4;
-const LO = 0.12;
-const HI = 0.82;
+const LO = 0.2;
+const HI = 0.62;
 
 let P: Plain | null = null;
 let gl: THREE.WebGLRenderer | null = null;
