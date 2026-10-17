@@ -30,7 +30,9 @@ function atRelay(): void {
   s.position = '@RLY';
   s.armed.push('?mast');
   s.rows = 20;
-  for (const f of ['HAB/radio/outbox', 'HAB/pods/pod.status', 'HAB/home/kaja', 'MEM/note', 'WX/almanac', 'PWR/selftest']) {
+  // read the one file holding each fact, wherever the content puts it
+  const holder = (fact: string) => Object.values(w.nodes).find((n) => n.lines?.facts?.includes(fact))!.id;
+  for (const f of ['!coords', '!pods', '!kaja', '!note', '!light', '!alive'].map(holder)) {
     s.mounted.includes(f.split('/')[0]) || s.mounted.push(f.split('/')[0]);
     run(w, 'read', f);
   }
@@ -71,32 +73,32 @@ describe('send', () => {
     atRelay();
     const o = run(w, 'send');
     expect(text(o.lines[0])).toBe('packet  0/64 bytes  transmit');
-    expect(all(o)).toContain('[ ] coords');
+    expect(all(o)).toContain('[ ] habitat at 12.4S 103.7E');
     expect(all(o)).toContain('4 pods 3 nominal');
     expect(all(o)).not.toContain('Ruben');
     for (const l of o.lines) expect(text(l).length).toBeLessThanOrEqual(48);
     expect(o.lines.length).toBeLessThanOrEqual(w.state.rows);
-    expect(typed(w, 'pick', find(o, 'coords'))).toBe('pick coords');
+    expect(typed(w, 'pick', find(o, 'habitat at 12.4S 103.7E'))).toBe('pick habitat at 12.4S 103.7E');
   });
 
   it('picks and unpicks facts, never past 64 bytes', () => {
     atRelay();
     let o = run(w, 'send');
-    o = click(o, 'coords');
+    o = click(o, 'habitat at 12.4S 103.7E');
     o = click(o, '4 pods 3 nominal');
     expect(text(o.lines[0])).toContain('36/64');
-    expect(all(o)).toContain('[x] coords');
-    o = click(o, 'K. note');
+    expect(all(o)).toContain('[x] habitat at 12.4S 103.7E');
+    o = click(o, "Kaja's note to the crew who comes");
     expect(text(o.lines[0])).toContain('no room for 40');
     expect(w.state.packet).not.toContain('!note');
-    o = click(o, 'coords');
+    o = click(o, 'habitat at 12.4S 103.7E');
     expect(text(o.lines[0])).toContain('18/64');
   });
 
   it('transmit ends the run with the best ending and five rows', () => {
     atRelay();
     let o = run(w, 'send');
-    o = click(o, 'coords');
+    o = click(o, 'habitat at 12.4S 103.7E');
     o = click(o, '4 pods 3 nominal');
     o = run(w, 'transmit');
     expect(all(o)).toContain('waiting for ack');
