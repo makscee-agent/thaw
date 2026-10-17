@@ -2,7 +2,7 @@
 // No keyboard: every command is typed by the game when something is clicked.
 
 import { cue, start } from '../audio';
-import { forest } from '../map';
+import { mapView } from '../map';
 import { prompt, resolve, run, save, typed, verbs, type Output, type Token, type World } from '../model';
 import * as windows from '../windows';
 import { renderLine, setClickHandler, tokenEl, type TokenEl } from './render';
@@ -135,7 +135,7 @@ export class Term {
   refresh(): void {
     if (this.w.state.windows.includes('map')) {
       windows.open('map');
-      windows.update('map', forest(this.w));
+      windows.update('map', mapView(this.w));
     }
   }
 

@@ -2,12 +2,14 @@ import './style.css';
 import { load, reset, save, tokenize } from './model';
 import { Term } from './term';
 import { hook as end } from './end';
+import { follow } from './map/trip';
 
 const params = new URLSearchParams(location.search);
 if (params.has('new')) reset();
 
 const w = load();
 const term = new Term(w);
+follow(term);
 (window as unknown as { thaw: unknown }).thaw = { w, term };
 end(term);
 

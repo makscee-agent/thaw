@@ -108,6 +108,12 @@ export interface State {
   installed: string[];
   /** the packet form: fact ids picked, null while the form is closed */
   packet: string[] | null;
+  /** the drive under way: from and to place ids, started at `at` (ms since epoch), lasting `ms` */
+  trip: { from: string; to: string; at: number; ms: number } | null;
+  /** every point T has driven through, km east/north of the wake point, oldest first */
+  path: [number, number][];
+  /** which MAP layer shows */
+  layer: 'forest' | 'terrain';
 }
 
 export interface World {
@@ -160,6 +166,9 @@ export function initialState(): State {
     ended: null,
     installed: [],
     packet: null,
+    trip: null,
+    path: [[0, 0]],
+    layer: 'forest',
   };
 }
 

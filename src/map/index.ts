@@ -1,8 +1,9 @@
 // MAP (DESIGN 3, 5, 9): the filesystem forest, and from `drive` on the terrain layer.
 
-import { tok } from '../model';
-import type { Line, World } from '../model';
-import { renderLine } from '../term/render';
+import { km, save, tok, where } from '../model';
+import type { Line, Token, World } from '../model';
+import * as windows from '../windows';
+import { renderLine, tokenEl } from '../term/render';
 
 /** the forest: one tree per machine (your root, then every mounted drive), drawn from what was listed */
 export function forest(w: World): HTMLElement {
@@ -28,10 +29,122 @@ export function forest(w: World): HTMLElement {
   return el;
 }
 
-/** the terrain layer. STUB until the terrain slice (#1313). */
-export function terrain(_w: World, _places: string[], _path: [number, number][]): HTMLElement {
-  const el = document.createElement('div');
+/** the MAP body for the layer in state, with the forest/terrain toggle in the title once drive is known */
+export function mapView(w: World): HTMLElement {
+  const s = w.state;
+  const title = windows.win('map').querySelector('.title') as HTMLElement;
+  title.replaceChildren('MAP');
+  if (s.layer === 'terrain' || s.bar.includes('drive') || s.places.length > 1) {
+    for (const layer of ['forest', 'terrain'] as const) {
+      const el = document.createElement('span');
+      el.textContent = layer;
+      el.dataset.tok = layer;
+      // a view toggle, not a command: it never types into TERM
+      if (layer === s.layer) el.className = 'layer on';
+      else {
+        el.className = 'tok layer';
+        el.onclick = () => {
+          s.layer = layer;
+          save(w);
+          windows.update('map', mapView(w));
+        };
+      }
+      title.append('  ', el);
+    }
+  }
+  if (s.layer !== 'terrain') return forest(w);
+  return terrain(w, s.places, s.trip ? [...s.path, where(w)] : s.path);
+}
+
+const SIZE = 300;
+/** km seen around every visited place and along the path */
+const SEEN = 0.8;
+const NS = 'http://www.w3.org/2000/svg';
+let maskId = 0;
+
+export type TerrainEl = HTMLElement & { track?: (path: [number, number][]) => void };
+
+function svg(name: string, attrs: Record<string, string | number>, parent?: Element): SVGElement {
+  const el = document.createElementNS(NS, name);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  parent?.append(el);
+  return el;
+}
+
+/** the terrain layer: you at the center (the trip's start while driving), fog over the unseen, a seen
+ *  disc around every visited place and along the path, known places as labeled dots with distances.
+ *  `path` ends at where you are; `track(path)` moves you along it without redrawing the labels. */
+export function terrain(w: World, places: string[], path: [number, number][]): TerrainEl {
+  const s = w.state;
+  const at = (id: string): [number, number] => {
+    const p = w.nodes[id]?.place;
+    return p ? [p.x, p.y] : [0, 0];
+  };
+  const [cx, cy] = at(s.trip ? s.trip.from : s.position);
+  const far = Math.max(1, ...places.map((p) => Math.hypot(at(p)[0] - cx, at(p)[1] - cy)));
+  const scale = Math.min(60, Math.max(18, (SIZE / 2 - 40) / far));
+  const px = ([x, y]: [number, number]): [number, number] => [SIZE / 2 + (x - cx) * scale, SIZE / 2 - (y - cy) * scale];
+  const pts = (p: [number, number][]) => p.map((q) => px(q).map((n) => n.toFixed(1)).join(',')).join(' ');
+  const id = `fog${++maskId}`;
+
+  const el: TerrainEl = document.createElement('div');
   el.className = 'terrain';
-  el.textContent = 'terrain';
+  const root = svg('svg', { width: SIZE, height: SIZE, viewBox: `0 0 ${SIZE} ${SIZE}` }, el);
+  const defs = svg('defs', {}, root);
+  const ground = svg('pattern', { id: id + 'g', width: 8, height: 8, patternUnits: 'userSpaceOnUse' }, defs);
+  svg('rect', { width: 8, height: 8, fill: '#141415' }, ground);
+  svg('rect', { x: 3.5, y: 3.5, width: 1.5, height: 1.5, fill: '#5a5a54' }, ground);
+  const hatch = svg('pattern', { id: id + 'h', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+  svg('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: '#1c1c1f', 'stroke-width': 2 }, hatch);
+  const mask = svg('mask', { id }, defs);
+  svg('rect', { width: SIZE, height: SIZE, fill: 'white' }, mask);
+  const r = SEEN * scale;
+  for (const v of s.visited) {
+    const [x, y] = px(at(v));
+    svg('circle', { cx: x, cy: y, r, fill: 'black' }, mask);
+  }
+  const seen = svg('polyline', { points: pts(path), fill: 'none', stroke: 'black', 'stroke-width': 2 * r, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, mask);
+
+  svg('rect', { width: SIZE, height: SIZE, fill: `url(#${id}g)` }, root);
+  const fog = svg('g', { mask: `url(#${id})` }, root);
+  svg('rect', { width: SIZE, height: SIZE, fill: '#0b0b0c' }, fog);
+  svg('rect', { width: SIZE, height: SIZE, fill: `url(#${id}h)` }, fog);
+  const trail = svg('polyline', { class: 'path', points: pts(path), fill: 'none', stroke: '#9a9a93', 'stroke-width': 1.5, 'stroke-dasharray': '3 3' }, root);
+  for (const p of places) {
+    const [x, y] = px(at(p));
+    const visited = s.visited.includes(p);
+    svg('circle', { cx: x, cy: y, r: 3.5, fill: visited ? '#9a9a93' : '#0b0b0c', stroke: '#9a9a93', 'stroke-width': 1.5 }, root);
+  }
+  const you = svg('rect', { class: 'you', width: 8, height: 8, fill: '#ffb000' }, root);
+
+  // the scale: one km, bottom left
+  svg('line', { x1: 8, y1: SIZE - 8, x2: 8 + scale, y2: SIZE - 8, stroke: '#9a9a93', 'stroke-width': 1 }, root);
+  const kmLabel = document.createElement('div');
+  kmLabel.className = 'tlabel';
+  kmLabel.textContent = '1 km';
+  Object.assign(kmLabel.style, { left: `${12 + scale}px`, top: `${SIZE - 19}px` });
+  el.append(kmLabel);
+
+  for (const p of places) {
+    const [x, y] = px(at(p));
+    const label = document.createElement('div');
+    label.className = 'tlabel';
+    const t: Token = { ...tok(w, w.nodes[p]), kind: 'place' };
+    label.append(tokenEl(t));
+    if (p !== s.position) label.append(` ${km(w, s.position, p).toFixed(1)} km`);
+    const right = x > SIZE - 90;
+    Object.assign(label.style, right ? { right: `${SIZE - x + 7}px` } : { left: `${x + 7}px` });
+    label.style.top = `${y - 11}px`;
+    el.append(label);
+  }
+
+  el.track = (p) => {
+    seen.setAttribute('points', pts(p));
+    trail.setAttribute('points', pts(p));
+    const [x, y] = px(p[p.length - 1]);
+    you.setAttribute('x', (x - 4).toFixed(1));
+    you.setAttribute('y', (y - 4).toFixed(1));
+  };
+  el.track(path);
   return el;
 }

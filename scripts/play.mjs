@@ -33,11 +33,28 @@ export const STEPS = [
   ['tok', 'MEM', 'map*'],
   ['tok', 'map*', 'installed'],
   ['verb', 'map', 'map open'],
+  // terrain and drive (#1313): NAV is named in PWR's spec
+  ['verb', 'read', null],
+  ['tok', 'spec', 'NAV'],
+  ['tok', 'NAV', 'NAV on'],
+  ['tok', 'NAV', 'drive*'],
+  ['tok', 'drive*', 'installed'],
+  ['verb', 'dev', 'nav'],
+  ['tok', 'NAV', 'waypoints'],
+  ['tok', 'terrain', '1 km'],
+  ['tok', 'waypoints', 'HAB 3.0 km bearing 040'],
+  ['tok', 'HAB 3.0 km bearing 040', 'driving'],
+  ['see', null, 'arrived'],
+  ['see', null, 'sol 3 >'],
+  ['verb', 'dev', 'habitat'],
+  ['tok', 'here', 'driving'],
+  ['see', null, 'on the bus: WX'],
+  ['tok', 'forest', 'T  /'],
   ['verb', 'dev', 'RADIO'],
   ['tok', 'RADIO', 'send*'],
   ['tok', 'send*', 'installed'],
   ['verb', 'send', 'no uplink key'],
-  // SHORTCUT until drive (#1313) and arm (#1312) land: put T at the relay with the key, the firmware
+  // SHORTCUT until arm (#1312) and the content (#1314) land (drive is in, but RLY is named nowhere yet): put T at the relay with the key, the firmware
   // and three facts, as the HAB, LDR and RLY steps will. Replace it with those steps.
   ['eval', () => {
     const s = window.thaw.w.state;
