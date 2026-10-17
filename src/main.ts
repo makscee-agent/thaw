@@ -3,6 +3,8 @@ import { load, reset, save, tokenize } from './model';
 import { Term } from './term';
 import { hook as end } from './end';
 import { follow } from './map/trip';
+import { hookFrame } from './scene/frame';
+import { render, still } from './scene';
 
 const params = new URLSearchParams(location.search);
 if (params.has('new')) reset();
@@ -10,7 +12,8 @@ if (params.has('new')) reset();
 const w = load();
 const term = new Term(w);
 follow(term);
-(window as unknown as { thaw: unknown }).thaw = { w, term };
+hookFrame(term);
+(window as unknown as { thaw: unknown }).thaw = { w, term, scene: { render, still } };
 end(term);
 
 if (w.state.lastOutput) {
