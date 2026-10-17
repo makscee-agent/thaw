@@ -57,10 +57,10 @@ describe('looking', () => {
     run(w, 'mount', 'IMG');
     const list = run(w, 'view');
     const names = list.lines.flat().filter(isToken).map((t) => t.text);
-    expect(names).toEqual(['land.img', 'crew.img', 'wave.img']);
+    expect(names).toEqual(['frame.1', 'frame.2', 'frame.3']);
     const crew = list.lines.flat().filter(isToken)[1];
-    expect(resolve(w, null, crew)).toEqual(['view', 'IMG/frames/crew.img']);
-    const o = run(w, 'view', 'IMG/frames/crew.img');
+    expect(resolve(w, null, crew)).toEqual(['view', 'IMG/frames/frame.2']);
+    const o = run(w, 'view', 'IMG/frames/frame.2');
     expect(o.open).toContain('frame');
     expect(w.state.frame?.still).toBe('crew');
   });
@@ -99,11 +99,12 @@ describe('the frame bits', () => {
 });
 
 describe('mid-road', () => {
-  it('a snap while driving renders from the road with the smear', async () => {
-    const { road } = await import('../src/model/verbs/look');
-    road.at = [1, 1];
+  it('a snap while driving renders from the road with the smear', () => {
+    w.state.trip = { from: '@here', to: '@HAB', at: Date.now() - 5000, ms: 10000 };
     run(w, 'snap', 'n');
-    road.at = null;
-    expect(w.state.frame).toMatchObject({ blur: true, at: [1, 1], things: [] });
+    expect(w.state.frame).toMatchObject({ blur: true, things: [] });
+    const [x, y] = w.state.frame!.at!;
+    expect(x).toBeGreaterThan(0.5);
+    expect(y).toBeLessThan(2.3);
   });
 });

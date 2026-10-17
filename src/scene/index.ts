@@ -191,10 +191,10 @@ const STILLS: Record<string, () => Still> = {
     const l = off('@LDR', 200, 22);
     return { at: [l[0] + 8, l[1] + 8], heading: 225, pitch: 6, figures: [[l[0] + 4, l[1] + 3], [l[0] + 5.5, l[1] + 1.5]] };
   },
-  // the habitat with its mast up and the four in front of it
+  // the habitat with its mast up and the four in front of it, waving
   crew: () => {
     const h = off('@HAB', 20, 26);
-    return { at: [h[0] - 1, h[1] - 14], heading: 0, pitch: 2, figures: [[h[0] - 3, h[1] - 6], [h[0] - 1.5, h[1] - 6.4], [h[0], h[1] - 6.2], [h[0] + 1.5, h[1] - 5.8]] };
+    return { at: [h[0] - 1, h[1] - 14], heading: 0, pitch: 2, figures: [[h[0] - 3, h[1] - 6, true], [h[0] - 1.5, h[1] - 6.4], [h[0], h[1] - 6.2, true], [h[0] + 1.5, h[1] - 5.8, true]] };
   },
   // the operator waving at T, close
   wave: () => {
