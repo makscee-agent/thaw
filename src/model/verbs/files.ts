@@ -1,6 +1,6 @@
 // ls, read, tail, more, install, set, map: the filesystem and the screen (DESIGN 4-6).
 
-import { addVerb, flow, page, reachable, run, say, tok, tokenize, verb } from '../commands';
+import { addVerb, flow, page, reachable, run, say, tok, tokenize, verb, verbs } from '../commands';
 import type { Line, Node, Output, Seg, World } from '../world';
 
 const isFolder = (w: World, id?: string) => !!id && ['folder', 'device'].includes(w.nodes[id]?.kind);
@@ -120,7 +120,8 @@ verb('install', {
     const why = reachable(w, n.id);
     if (why) return say(`install: ${why}`);
     const v = n.tool.verb;
-    const added = addVerb(w, v);
+    const fresh = !w.state.installed.includes(n.id) && !!w.state.installed.push(n.id);
+    const added = addVerb(w, v) || (fresh && !!verbs[v]?.hidden);
     return { lines: [[{ text: v, kind: 'verb', arg: v }, added ? ' installed' : ' is in the bar'], tokenize(w, n.tool.help)], cues: ['install'] };
   },
 });
