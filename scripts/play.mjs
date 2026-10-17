@@ -8,7 +8,9 @@ import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const PORT = 4179;
-const URL = `http://localhost:${PORT}/?new&fast`;
+// PLAY_URL=https://makscee.github.io/thaw/ npm run play checks a deployed build instead of dist/
+const BASE = process.env.PLAY_URL ?? `http://localhost:${PORT}/`;
+const URL = `${BASE}?new&fast`;
 
 /** [kind, text, expect]: 'verb' clicks the bar, 'tok' the last token with that text, 'see' only waits */
 export const STEPS = [
@@ -32,15 +34,15 @@ export const STEPS = [
   ['verb', 'map', 'map open'],
 ];
 
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' });
-const stop = () => server.kill();
-process.on('exit', stop);
+const server = process.env.PLAY_URL ? null : spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' });
+process.on('exit', () => server?.kill());
 
 async function main() {
-  await new Promise((ok, fail) => {
-    server.stdout.on('data', (d) => String(d).includes(String(PORT)) && ok());
-    server.on('exit', (c) => fail(new Error(`vite preview exited ${c}; did you npm run build?`)));
-  });
+  if (server)
+    await new Promise((ok, fail) => {
+      server.stdout.on('data', (d) => String(d).includes(String(PORT)) && ok());
+      server.on('exit', (c) => fail(new Error(`vite preview exited ${c}; did you npm run build?`)));
+    });
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = [];
