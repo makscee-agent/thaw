@@ -22,7 +22,7 @@ const off = (place: string, bearing: number, m: number): [number, number] => {
   return [x * KM + Math.sin(b) * m, y * KM + Math.cos(b) * m];
 };
 
-const CRATER = off('@T-2', 300, 22);
+const CRATER = off('@T-2', 285, 22);
 const CRATER_R = 18;
 const RIDGE_E = PLACES['@RLY'][0] * KM;
 
@@ -43,7 +43,7 @@ export function height(e: number, n: number): number {
   const d = Math.hypot(e - CRATER[0], n - CRATER[1]);
   if (d < CRATER_R * 1.6) {
     const t = d / CRATER_R;
-    h += t < 1 ? -5 * (1 - t * t) + 1.2 * t * t : 1.2 * (1 - smooth(1, 1.6, t));
+    h += t < 1 ? -3.5 * (1 - t * t) + 0.6 * t * t : 0.6 * (1 - smooth(1, 1.6, t));
   }
   return h;
 }
@@ -298,7 +298,7 @@ export function plain(): Plain {
   scene.add(tag(place(lander(), off('@LDR', 200, 22), 10), '?lander'));
   scene.add(tag(place(relayMast(), off('@RLY', 90, 14)), '?mast'));
   const sib = rover();
-  place(sib, off('@T-2', 300, 16), 120, 0.3);
+  place(sib, off('@T-2', 280, 10), 120, 0.2);
   sib.rotation.x = 0.35;
   sib.rotation.z = 0.25;
   scene.add(tag(sib, '?sibling'));

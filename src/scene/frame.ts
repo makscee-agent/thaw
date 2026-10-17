@@ -3,7 +3,7 @@
 
 import type { Term } from '../term';
 import { dirName, setEye, thingTok } from '../model/verbs/look';
-import type { Token, World } from '../model';
+import { run, save, type Token, type World } from '../model';
 import * as windows from '../windows';
 import { renderLine } from '../term/render';
 import { cam, closeCam, render, still, type Shot } from '.';
@@ -91,6 +91,25 @@ export function hookFrame(term: Term): void {
     eyeShot = { key: viewKey(v), shot: render(v) };
     return eyeShot.shot.things.map((t) => t.id);
   });
+  // deep link for judging: ?look=@RLY:e starts a run standing there with the eyes, snapped that way; &cam opens CAM
+  const look = new URLSearchParams(location.search).get('look');
+  if (look) {
+    const [place, d] = look.split(':');
+    const s = term.w.state;
+    if (term.w.nodes[place]?.place) s.position = place;
+    s.sol ||= 1;
+    s.rows = 20;
+    for (const v of ['ls', 'read', 'dev', 'mount', 'snap', 'arm', 'view', 'cam']) if (!s.bar.includes(v)) s.bar.push(v);
+    if (!s.powered.includes('IMG')) s.powered.push('IMG');
+    if (!s.mounted.includes('IMG')) s.mounted.push('IMG');
+    s.windows = s.windows.filter((x) => x !== 'cam');
+    run(term.w, 'snap', d ?? 'n');
+    if (new URLSearchParams(location.search).has('cam')) s.windows.push('cam');
+    save(term.w);
+    term.setRows(s.rows, false);
+    term.drawBar();
+    term.drawInput('');
+  }
   term.after.push(() => {
     draw(term.w, true);
     syncCam(term.w);
