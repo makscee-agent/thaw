@@ -6,7 +6,7 @@ You are a machine that froze for forty-one years and just woke with its memory g
 
 - Design: [DESIGN.md](DESIGN.md)
 - Build plan: [PLAN.md](PLAN.md)
-- Play: the GitHub Pages build of `main` (link appears once the first build is live)
+- Play: https://makscee.github.io/thaw/ (the GitHub Pages build of `main`)
 
 ## Run
 
