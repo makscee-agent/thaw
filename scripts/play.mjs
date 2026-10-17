@@ -45,8 +45,22 @@ export const STEPS = [
   ['tok', 'exposure.log', 'IMG'],
   ['tok', 'IMG', 'IMG on'],
   ['tok', 'IMG', 'snap*'],
-  // terrain and drive (#1313). SHORTCUT until arm (#1312): NAV is named in the crate's manifest; power it directly
-  ['eval', () => { window.thaw.w.state.powered.push('NAV'); }, null],
+  // the scene (#1312): snap, the stored frames, arm the crate, NAV named in its manifest
+  ['tok', 'snap*', 'installed'],
+  ['tok', 'view*', 'installed'],
+  ['verb', 'view', 'frame.1'],
+  ['tok', 'frame.2', 'four of them'],
+  ['verb', 'dev', 'ARM'],
+  ['tok', 'ARM', 'arm*'],
+  ['tok', 'arm*', 'installed'],
+  ['verb', 'snap', null],
+  ['tok', 'n', 'in view'],
+  ['click', '.win-frame .tok[data-node="?crate"]', 'INS'],
+  ['tok', 'INS', 'manifest'],
+  ['tok', 'optics*', 'installed'],
+  ['tok', 'manifest', 'NAV'],
+  ['tok', 'NAV', 'NAV on'],
+  // terrain and drive (#1313)
   ['verb', 'dev', 'nav'],
   ['tok', 'NAV', 'drive*'],
   ['tok', 'drive*', 'installed'],
@@ -56,6 +70,8 @@ export const STEPS = [
   ['tok', 'waypoints', 'HAB 3.0 km bearing 040'],
   ['tok', 'HAB 3.0 km bearing 040', 'driving'],
   ['see', null, 'arrived'],
+  ['verb', 'snap', null],
+  ['tok', 'n', '96 px'],
   ['verb', 'dev', 'habitat'],
   ['tok', 'here', 'driving'],
   ['see', null, 'on the bus: WX'],
@@ -74,6 +90,14 @@ export const STEPS = [
     s.armed.push('?mast');
     s.facts.push('!coords', '!pods', '!kaja');
   }, null],
+  // at the relay: the mast in frame, the camera open, send from inside it
+  ['verb', 'snap', null],
+  ['tok', 'e', 'in view: mast'],
+  ['eval', () => {
+    window.thaw.w.state.bar.push('cam');
+    window.thaw.term.drawBar();
+  }, null],
+  ['verb', 'cam', 'cam open'],
   ['verb', 'send', 'packet  0/64 bytes'],
   ['tok', 'habitat at 12.4S 103.7E', '18/64'],
   ['tok', '4 pods 3 nominal', '36/64'],

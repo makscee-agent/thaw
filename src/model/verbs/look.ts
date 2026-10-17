@@ -8,7 +8,11 @@ import type { Line, Output, Seg, World } from '../world';
 export const DIRS: Record<string, number> = { n: 0, e: 90, s: 180, w: 270 };
 const DIR_NAME: Record<number, string> = { 0: 'n', 90: 'e', 180: 's', 270: 'w' };
 
-export type Eye = (v: { place: string; heading: number; res: 32 | 96; blur?: boolean }) => string[];
+export type Eye = (v: { place: string; heading: number; res: 32 | 96; blur?: boolean; at?: [number, number] }) => string[];
+
+/** mid-road (DESIGN 8): while a drive runs, the drive sets `road.at` (km east/north) and a snap
+ * renders from there with the horizontal smear; it clears it on arrival */
+export const road: { at: [number, number] | null } = { at: null };
 
 let eye: Eye | null = null;
 export function setEye(fn: Eye): void {
@@ -39,8 +43,8 @@ verb('snap', {
     const heading = DIRS[d] ?? s.heading;
     const res: 32 | 96 = s.bar.includes('optics') ? 96 : 32;
     s.heading = heading;
-    const view = { place: s.position, heading, res };
-    const things = eye ? eye(view) : atPlace(w, s.position);
+    const view = road.at ? { place: s.position, heading, res, blur: true, at: road.at } : { place: s.position, heading, res };
+    const things = eye ? eye(view) : road.at ? [] : atPlace(w, s.position);
     s.frame = { ...view, things };
     const n = things.length;
     return open(w, {

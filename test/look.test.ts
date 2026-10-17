@@ -97,3 +97,13 @@ describe('the frame bits', () => {
     expect([...smear(col, 3, 1)]).toEqual([85, 85, 85, 85, 85, 85, 85, 85, 85]);
   });
 });
+
+describe('mid-road', () => {
+  it('a snap while driving renders from the road with the smear', async () => {
+    const { road } = await import('../src/model/verbs/look');
+    road.at = [1, 1];
+    run(w, 'snap', 'n');
+    road.at = null;
+    expect(w.state.frame).toMatchObject({ blur: true, at: [1, 1], things: [] });
+  });
+});

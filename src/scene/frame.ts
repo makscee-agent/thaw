@@ -20,7 +20,7 @@ let scan = 1;
 let camOn = false;
 /** the eye's last render, so a snap renders once */
 let eyeShot: { key: string; shot: Shot } | null = null;
-const viewKey = (v: { place: string; heading: number; res: number; blur?: boolean }) => `${v.place} ${v.heading} ${v.res} ${!!v.blur}`;
+const viewKey = (v: { place: string; heading: number; res: number; blur?: boolean; at?: [number, number] }) => `${v.place} ${v.heading} ${v.res} ${!!v.blur} ${v.at ?? ''}`;
 
 function paint(): void {
   if (!ctx || !shot) return;
@@ -45,7 +45,7 @@ function draw(w: World, animate: boolean): void {
   const key = JSON.stringify(f);
   if (key !== drawn) {
     drawn = key;
-    const v = { place: f.place, heading: f.heading, res: f.res, blur: f.blur };
+    const v = { place: f.place, heading: f.heading, res: f.res, blur: f.blur, at: f.at };
     shot = f.still ? still(f.still) : eyeShot?.key === viewKey(v) ? eyeShot.shot : render(v);
     res = f.still ? 32 : f.res;
     const el = document.createElement('div');
@@ -72,7 +72,9 @@ function draw(w: World, animate: boolean): void {
   }
   // the line under the frame: direction and things, redrawn so armed things show their names
   const under = windows.body('frame').querySelector('.under');
-  if (under) under.replaceChildren(renderLine(f.still ? [`stored  ${f.still}`] : [`${dirName(f.heading)}  `, ...f.things.flatMap((id) => ['  ', thingTok(w, id)])]));
+  if (!under) return;
+  under.replaceChildren(renderLine(f.still ? [`stored  ${f.still}`] : [`${dirName(f.heading)}  `, ...f.things.flatMap((id) => ['  ', thingTok(w, id)])]));
+  for (const el of under.querySelectorAll<HTMLElement & { tok?: Token }>('.tok')) if (el.tok?.nodeId) el.dataset.node = el.tok.nodeId;
 }
 
 function syncCam(w: World): void {

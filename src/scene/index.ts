@@ -37,6 +37,8 @@ const EYE = 1.95;
 const PITCH = -9;
 /** frames are rendered this many times larger, then averaged down */
 const SS = 4;
+const LO = 0.12;
+const HI = 0.82;
 
 let P: Plain | null = null;
 let gl: THREE.WebGLRenderer | null = null;
@@ -102,7 +104,8 @@ function greys(r: THREE.WebGLRenderer, p: Plain, res: number): Uint8Array {
   const g = new Uint8Array(size * size);
   for (let i = 0; i < g.length; i++) {
     const l = (0.2126 * rgba[i * 4] + 0.7152 * rgba[i * 4 + 1] + 0.0722 * rgba[i * 4 + 2]) / 255;
-    g[i] = Math.round(Math.pow(l, 1 / 2.2) * 255);
+    // levels: the dark ground darker, the sky brighter, so one bit still reads
+    g[i] = Math.round(Math.min(1, Math.max(0, (Math.pow(l, 1 / 2.2) - LO) / (HI - LO))) * 255);
   }
   return shrink(g, size, res);
 }
@@ -186,17 +189,17 @@ const STILLS: Record<string, () => Still> = {
   // landing day: the lander upright, two figures by its legs
   land: () => {
     const l = off('@LDR', 200, 22);
-    return { at: [l[0] + 12, l[1] + 12], heading: 225, pitch: 2, figures: [[l[0] + 4, l[1] + 3], [l[0] + 5.5, l[1] + 1.5]] };
+    return { at: [l[0] + 8, l[1] + 8], heading: 225, pitch: 6, figures: [[l[0] + 4, l[1] + 3], [l[0] + 5.5, l[1] + 1.5]] };
   },
   // the habitat with its mast up and the four in front of it
   crew: () => {
     const h = off('@HAB', 20, 26);
-    return { at: [h[0] - 2, h[1] - 20], heading: 5, pitch: 3, figures: [[h[0] - 3, h[1] - 6], [h[0] - 1.5, h[1] - 6.4], [h[0], h[1] - 6.2], [h[0] + 1.5, h[1] - 5.8]] };
+    return { at: [h[0] - 1, h[1] - 14], heading: 0, pitch: 2, figures: [[h[0] - 3, h[1] - 6], [h[0] - 1.5, h[1] - 6.4], [h[0], h[1] - 6.2], [h[0] + 1.5, h[1] - 5.8]] };
   },
   // the operator waving at T, close
   wave: () => {
     const h = off('@HAB', 20, 26);
-    return { at: [h[0] + 4, h[1] - 16], heading: 350, pitch: 0, figures: [[h[0] + 3.3, h[1] - 12.5, true]] };
+    return { at: [h[0] + 4.2, h[1] - 15.5], heading: 345, pitch: 4, figures: [[h[0] + 3.3, h[1] - 12.5, true]] };
   },
 };
 
