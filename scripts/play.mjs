@@ -20,7 +20,7 @@ export const STEPS = [
   ['tok', 'PWR', 'tools:'],
   ['tok', 'power*', 'installed'],
   ['verb', 'power', '? off'],
-  ['tok', 'PWR', 'spec'],
+  ['tok', 'ARM', 'arm*'],
   ['verb', 'tail', null],
   ['tok', 'log', 'DSP'],
   ['tok', 'DSP', 'DSP on'],
@@ -32,6 +32,17 @@ export const STEPS = [
   ['tok', 'MEM', 'map*'],
   ['tok', 'map*', 'installed'],
   ['verb', 'map', 'map open'],
+  ['verb', 'tail', null],
+  ['tok', 'ops.log', 'find us'],
+  ['tok', 'readme', 'sorry'],
+  ['verb', 'dev', 'WX'],
+  ['tok', 'WX', 'almanac'],
+  ['tok', 'almanac', '+41y'],
+  ['tok', 'WX', 'exposure.log'],
+  ['verb', 'tail', null],
+  ['tok', 'exposure.log', 'IMG'],
+  ['tok', 'IMG', 'IMG on'],
+  ['tok', 'IMG', 'snap*'],
 ];
 
 const server = process.env.PLAY_URL ? null : spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' });

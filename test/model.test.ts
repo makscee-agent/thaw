@@ -49,7 +49,8 @@ describe('the spine flow', () => {
     run(w, 'install', 'PWR/power');
     const parts = run(w, 'power');
     expect(all(parts)).toContain('? off');
-    const tail = run(w, 'tail', 'PWR/log');
+    run(w, 'mount', 'ARM');
+    const tail = run(w, 'tail', 'ARM/log');
     expect(tail.lines.length).toBeLessThanOrEqual(5);
     const on = click(tail, 'DSP');
     expect(all(on)).toContain('DSP on');
@@ -72,10 +73,10 @@ describe('the spine flow', () => {
     expect(all(o)).toBe(all(o)); // PWR not mounted yet
     run(w, 'mount', 'PWR');
     const r = run(w, 'read', 'PWR/log');
-    expect(text(r.lines[0])).toMatch(/\+3 more/);
+    expect(text(r.lines[0])).toMatch(/\+10 more/);
     w.state.bar.push('more');
     const m = run(w, 'more');
-    expect(all(m)).toContain('DSP held off');
+    expect(all(m)).toContain('sol 40');
   });
 
   it('a verb that waits takes only the nouns that fit', () => {
