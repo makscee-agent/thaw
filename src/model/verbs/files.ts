@@ -2,6 +2,7 @@
 
 import { addVerb, flow, page, reachable, run, say, tok, tokenize, verb, verbs } from '../commands';
 import type { Line, Node, Output, Seg, World } from '../world';
+import { mark } from './drive';
 
 const isFolder = (w: World, id?: string) => !!id && ['folder', 'device'].includes(w.nodes[id]?.kind);
 const isFile = (w: World, id?: string) => !!id && w.nodes[id]?.kind === 'file';
@@ -140,9 +141,11 @@ verb('set', {
 });
 
 verb('map', {
-  takes: 'none',
-  run(w) {
+  takes: 'optional',
+  fits: (_w, t) => t.kind === 'place',
+  run(w, id) {
     if (!w.state.windows.includes('map')) w.state.windows.push('map');
+    if (id) return mark(w, id);
     return { lines: [['map open']], open: ['map'] };
   },
 });

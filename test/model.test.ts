@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { isToken, prompt, resolve, run, tokenize, type Line, type Output, type Token, type World } from '../src/model';
+import { cost, isToken, km, prompt, resolve, run, tokenize, where, type Line, type Output, type Token, type World } from '../src/model';
 import { world } from '../src/content';
 
 let w: World;
@@ -102,5 +102,107 @@ describe('the spine flow', () => {
     expect(prompt(w)).toBe('sol 1/22 >');
     w.state.sol = 18;
     expect(prompt(w)).toBe('sol 18/22 · cold >');
+  });
+});
+
+describe('places and driving', () => {
+  const navReady = () => {
+    run(w, 'mount', 'PWR');
+    w.state.powered.push('NAV');
+    run(w, 'mount', 'NAV');
+  };
+
+  it('turns a place line into one place token, the name a device token elsewhere', () => {
+    const l = tokenize(w, 'HAB 3.0 km bearing 040');
+    expect(l).toEqual([{ text: 'HAB 3.0 km bearing 040', kind: 'place', nodeId: '@HAB' }]);
+    const m = tokenize(w, 'go: T-2 2.0 km bearing 300. mount HAB');
+    expect(m.filter(isToken).map((t) => [t.text, t.kind])).toEqual([
+      ['T-2 2.0 km bearing 300', 'place'],
+      ['mount', 'verb'],
+      ['HAB', 'device'],
+    ]);
+    expect(tokenize(w, 'XYZ 1.0 km bearing 010').filter(isToken)).toEqual([]);
+  });
+
+  it('a clicked place line puts the place on the map before drive is known', () => {
+    navReady();
+    const wp = run(w, 'read', 'NAV/waypoints');
+    const r = resolve(w, null, find(wp, 'HAB 3.0 km bearing 040'))!;
+    expect(r).toEqual(['map', '@HAB']);
+    const o = run(w, r[0], r[1]);
+    expect(w.state.places).toContain('@HAB');
+    expect(w.state.layer).toBe('terrain');
+    expect(o.open).toContain('map');
+  });
+
+  it('drives to HAB: the driving line, then arrival with HAB on the bus and the sol advanced', () => {
+    navReady();
+    run(w, 'install', 'NAV/drive');
+    w.state.bar.push('snap');
+    const wp = run(w, 'read', 'NAV/waypoints');
+    const r = resolve(w, null, find(wp, 'HAB 3.0 km bearing 040'))!;
+    expect(r).toEqual(['drive', '@HAB']);
+    const d = run(w, r[0], r[1]);
+    expect(all(d)).toMatch(/^driving {2}HAB {2}3\.0 km {2}snap/);
+    expect(find(d, 'snap').kind).toBe('verb');
+    expect(w.state.trip?.to).toBe('@HAB');
+    expect(w.state.position).toBe('@here');
+    expect(all(run(w, 'drive', '@LDR'))).toContain('on the road to HAB');
+    const a = run(w, 'arrive');
+    expect(all(a)).toContain('arrived  HAB  sol 3');
+    expect(toks(a).map((t) => t.kind)).toEqual(['place', 'device']);
+    expect(w.state.position).toBe('@HAB');
+    expect(w.state.sol).toBe(1 + 2);
+    expect(w.state.visited).toEqual(['@here', '@HAB']);
+    expect(w.state.path).toEqual([[0, 0], [1.93, 2.3]]);
+    expect(all(run(w, 'dev'))).toContain('habitat');
+    expect(all(run(w, 'mount', 'HAB'))).toContain('pods/');
+  });
+
+  it('allows the return trip and leaves the habitat behind', () => {
+    navReady();
+    run(w, 'drive', '@HAB');
+    run(w, 'arrive');
+    expect(all(run(w, 'drive', '@HAB'))).toContain('you are at');
+    run(w, 'drive', '@here');
+    run(w, 'arrive');
+    expect(w.state.position).toBe('@here');
+    expect(w.state.sol).toBe(1 + 2 + 2);
+    expect(all(run(w, 'dev'))).not.toContain('habitat');
+    expect(all(run(w, 'dev'))).toContain('weather');
+  });
+
+  it('costs ceil(km / 1.5) sols along the straight line', () => {
+    expect([km(w, '@here', '@LDR'), km(w, '@here', '@RLY')].map((k) => cost(k))).toEqual([1, 3]);
+    expect(cost(km(w, '@HAB', '@RLY'))).toBe(3);
+    w.state.sol = 1;
+    run(w, 'drive', '@RLY');
+    run(w, 'arrive');
+    expect(w.state.sol).toBe(4);
+  });
+
+  it('bare drive lists known places with distances, NAV waypoints included', () => {
+    navReady();
+    const o = run(w, 'drive');
+    expect(w.state.places).toEqual(['@here', '@LDR', '@HAB']);
+    expect(all(o)).toContain('here  you are here');
+    expect(all(o)).toContain('HAB  3.0 km  bearing 040');
+    expect(all(o)).toContain('LDR  1.5 km  bearing 200');
+  });
+
+  it('slides along the straight line while driving', () => {
+    w.state.trip = { from: '@here', to: '@RLY', at: 1000, ms: 10_000 };
+    expect(where(w, 6000)).toEqual([2, 0]);
+    expect(where(w, 99_000)).toEqual([4, 0]);
+  });
+
+  it('counts plainly past the light', () => {
+    run(w, 'mount', 'PWR');
+    run(w, 'mount', 'WX');
+    run(w, 'read', 'WX/almanac');
+    w.state.sol = 21;
+    run(w, 'drive', '@RLY');
+    run(w, 'arrive');
+    expect(prompt(w)).toBe('sol 24/22 · cold >');
   });
 });

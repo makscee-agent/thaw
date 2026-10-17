@@ -7,7 +7,8 @@ import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 
-const PORT = 4179;
+// a random port: workers on one machine run play at the same time
+const PORT = Number(process.env.PLAY_PORT) || 4100 + Math.floor(Math.random() * 800);
 // PLAY_URL=https://makscee.github.io/thaw/ npm run play checks a deployed build instead of dist/
 const BASE = process.env.PLAY_URL ?? `http://localhost:${PORT}/`;
 const URL = `${BASE}?new&fast`;
@@ -44,11 +45,26 @@ export const STEPS = [
   ['tok', 'exposure.log', 'IMG'],
   ['tok', 'IMG', 'IMG on'],
   ['tok', 'IMG', 'snap*'],
+  // terrain and drive (#1313). SHORTCUT until arm (#1312): NAV is named in the crate's manifest; power it directly
+  ['eval', () => { window.thaw.w.state.powered.push('NAV'); }, null],
+  ['verb', 'dev', 'nav'],
+  ['tok', 'NAV', 'drive*'],
+  ['tok', 'drive*', 'installed'],
+  ['verb', 'dev', 'nav'],
+  ['tok', 'NAV', 'waypoints'],
+  ['tok', 'terrain', '1 km'],
+  ['tok', 'waypoints', 'HAB 3.0 km bearing 040'],
+  ['tok', 'HAB 3.0 km bearing 040', 'driving'],
+  ['see', null, 'arrived'],
+  ['verb', 'dev', 'habitat'],
+  ['tok', 'here', 'driving'],
+  ['see', null, 'on the bus: WX'],
+  ['tok', 'forest', 'T  /'],
   ['verb', 'dev', 'RADIO'],
   ['tok', 'RADIO', 'send*'],
   ['tok', 'send*', 'installed'],
   ['verb', 'send', 'no uplink key'],
-  // SHORTCUT until drive (#1313) and arm (#1312) land: put T at the relay with the key, the firmware
+  // SHORTCUT until arm (#1312) and the content (#1314) land (drive is in, but RLY is named nowhere yet): put T at the relay with the key, the firmware
   // and three facts, as the HAB, LDR and RLY steps will. Replace it with those steps.
   ['eval', () => {
     const s = window.thaw.w.state;

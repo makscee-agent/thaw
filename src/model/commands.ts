@@ -52,7 +52,7 @@ export function defaultVerb(w: World, t: Token): string | null {
     case 'subsystem':
       return 'power';
     case 'place':
-      return 'drive';
+      return w.state.bar.includes('drive') ? 'drive' : 'map';
     case 'thing':
       return 'arm';
     case 'fact':
@@ -66,6 +66,7 @@ export function typed(w: World, v: string, t?: Token): string {
   if (!t) return v;
   if (t.kind === 'value') return t.arg!;
   if (t.kind === 'dir') return `${v} ${t.arg}`;
+  if (t.kind === 'place') return `${v} ${w.nodes[t.nodeId!]?.name ?? t.text}`;
   return `${v} ${t.text.replace(/[/*]$/, '')}`;
 }
 
@@ -176,10 +177,27 @@ export function tok(w: World, n: Node): Token {
   return { text, kind: n.kind as Kind, nodeId: n.id };
 }
 
+/** a place line, "HAB 3.0 km bearing 040": the whole line is one place token */
+const PLACE = /([A-Z][A-Z0-9-]*) (\d+(?:\.\d+)?) km bearing (\d{3})/g;
+
 const WORD = /\{([^|}]+)\|([^}]+)\}|[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]|[A-Za-z0-9]/g;
 
-/** turn a line of text into segments: names become tokens, `{5|set rows 20}` a value token */
+/** turn a line of text into segments: names become tokens, `{5|set rows 20}` a value token,
+ *  a place line `HAB 3.0 km bearing 040` a place token */
 export function tokenize(w: World, text: string): Line {
+  const out: Seg[] = [];
+  let at = 0;
+  for (const m of text.matchAll(PLACE)) {
+    const id = '@' + m[1];
+    if (w.nodes[id]?.kind !== 'place') continue;
+    out.push(...words(w, text.slice(at, m.index)), { text: m[0], kind: 'place', nodeId: id });
+    at = m.index! + m[0].length;
+  }
+  out.push(...words(w, text.slice(at)));
+  return out;
+}
+
+function words(w: World, text: string): Line {
   const out: Seg[] = [];
   const idx = names(w);
   let last = 0;

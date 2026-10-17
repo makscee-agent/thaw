@@ -35,3 +35,5 @@ export function reset(): void {
     /* nothing saved */
   }
 }
+
+export { bearing, cost, km, TRIP, where } from './verbs/drive';

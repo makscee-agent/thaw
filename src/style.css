@@ -104,3 +104,8 @@ body[data-end='card'] #desk { opacity: 0; pointer-events: none; }
 .end-name { color: var(--head); font-size: 40px; line-height: 44px; }
 .end-again { color: var(--amber); cursor: pointer; }
 .end-again:hover { background: var(--amber); color: #000; }
+.win-map .title .layer.on { color: var(--head); }
+.win-map .title .layer:not(.on) { color: var(--amber); }
+.terrain { position: relative; width: 300px; height: 300px; overflow: hidden; }
+.terrain svg { display: block; }
+.tlabel { position: absolute; line-height: 22px; white-space: pre; }
